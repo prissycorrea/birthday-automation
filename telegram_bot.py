@@ -34,14 +34,19 @@ amanha = (datetime.now(fuso_brasil) + timedelta(days=1)).strftime("%m-%d")
 
 aniversariantes = df[df["data"].apply(lambda d: datetime.strptime(d, "%Y-%m-%d").strftime('%m-%d') in [hoje, amanha])]
 
+# Pega a lista de chat_ids separados por vírgula
+CHAT_IDS = os.getenv("TELEGRAM_CHAT_ID").split(",")
+
 def enviar_telegram(msg):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        "chat_id": CHAT_ID,
-        "text": msg
-    }
-    r = requests.post(url, data=data)
-    print(f"Enviado: {msg} | Status: {r.status_code}")
+    for chat_id in CHAT_IDS:
+        data = {
+            "chat_id": chat_id.strip(),
+            "text": msg
+        }
+        r = requests.post(url, data=data)
+        print(f"Enviado para {chat_id.strip()}: {msg} | Status: {r.status_code}")
+
 
 if not aniversariantes.empty:
     for _, row in aniversariantes.iterrows():
