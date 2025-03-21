@@ -20,7 +20,6 @@ jobs:
       - name: Listar arquivos do diretório antes de rodar o script
         run: ls -R
 
-
       - name: Rodar o script de aniversários
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
