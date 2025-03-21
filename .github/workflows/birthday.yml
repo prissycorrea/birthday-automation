@@ -1,0 +1,26 @@
+name: Enviar lembrete de aniversários
+
+on:
+  schedule:
+    - cron: '0 11 * * *'  # executa todo dia às 8h (Brasília) = 11h UTC
+  workflow_dispatch:      # permite rodar manualmente
+
+jobs:
+  lembrete:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar o repositório
+        uses: actions/checkout@v2
+
+      - name: Instalar dependências
+        run: |
+          pip install pandas twilio
+
+      - name: Rodar o script de aniversários
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+          TWILIO_TO: ${{ secrets.TWILIO_TO }}
+        run: python aniversario_bot.py
