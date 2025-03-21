@@ -10,7 +10,7 @@ from_whatsapp = os.getenv("TWILIO_FROM")
 to_whatsapp = os.getenv("TWILIO_TO")
 
 # Carrega aniversários
-df = pd.read_csv("aniversarios.csv")
+df = pd.read_csv("birthdays.csv")
 hoje = datetime.today().strftime('%m-%d')
 
 # Filtra aniversariantes de hoje
