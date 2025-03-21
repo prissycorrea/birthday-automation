@@ -9,7 +9,7 @@ import json
 
 # ================== AUTENTICAÇÃO GOOGLE SHEETS ==================
 
-# Lê as credenciais do JSON (armazenadas como string no secret)
+# Lê as credenciais do JSON
 creds_dict = json.loads(os.getenv("GSHEETS_CREDENTIALS_JSON"))
 
 # Define escopo de acesso
@@ -24,8 +24,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 # Autoriza cliente do Google Sheets
 gs_client = gspread.authorize(creds)
 
-# Nome da planilha (deve ser exato ao que está no Google Sheets)
-SHEET_NAME = "Aniversarios"  # ou use open_by_key("ID_DA_PLANILHA")
+# Nome da planilha
+SHEET_NAME = "birthdays"
 sheet = gs_client.open(SHEET_NAME).sheet1
 
 # Lê os dados da planilha
