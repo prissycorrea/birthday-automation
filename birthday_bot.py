@@ -9,8 +9,23 @@ auth_token = os.getenv("TWILIO_AUTH_TOKEN")
 from_whatsapp = os.getenv("TWILIO_FROM")
 to_whatsapp = os.getenv("TWILIO_TO")
 
+csv_path = "birthdays.csv"
+
+# Verifica se o arquivo existe
+if not os.path.exists(csv_path):
+    print(f"Erro: Arquivo {csv_path} não encontrado!")
+    exit(1)
+
+# Lendo o CSV
+df = pd.read_csv(csv_path, encoding="utf-8")
+
+# Mostra as primeiras linhas para debug
+print("Arquivo lido com sucesso! Conteúdo:")
+print(df.head())
+
+
 # Carrega aniversários
-df = pd.read_csv("birthdays.csv")
+df = pd.read_csv(csv_path, encoding="utf-8")
 hoje = datetime.today().strftime('%m-%d')
 
 # Filtra aniversariantes de hoje
