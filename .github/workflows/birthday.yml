@@ -28,3 +28,10 @@ jobs:
             TWILIO_TO: ${{ secrets.TWILIO_TO }}
             GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
         run: python birthday_bot.py
+
+      - name: Rodar o bot do Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
+        run: python telegram_bot.py
