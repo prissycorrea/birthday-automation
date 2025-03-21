@@ -2,45 +2,40 @@ import pandas as pd
 from datetime import datetime
 from twilio.rest import Client
 import os
+import pytz
 
-# Lê variáveis de ambiente
+# Configurações do Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
 from_whatsapp = os.getenv("TWILIO_FROM")
-to_whatsapp = os.getenv("TWILIO_TO")
 
-csv_path = "birthdays.csv"
+# Converte os números para uma lista (removendo espaços extras)
+to_whatsapp_numbers = [num.strip() for num in os.getenv("TWILIO_TO", "").split(",")]
 
-# Verifica se o arquivo existe
-if not os.path.exists(csv_path):
-    print(f"Erro: Arquivo {csv_path} não encontrado!")
-    exit(1)
-
-# Lendo o CSV
-df = pd.read_csv(csv_path, encoding="utf-8")
-
-# Mostra as primeiras linhas para debug
-print("Arquivo lido com sucesso! Conteúdo:")
-print(df.head())
-
+# Obtém a data correta considerando fuso horário do Brasil
+fuso_brasil = pytz.timezone('America/Sao_Paulo')
+hoje = datetime.now(fuso_brasil).strftime('%m-%d')
 
 # Carrega aniversários
-df = pd.read_csv(csv_path, encoding="utf-8")
-hoje = datetime.today().strftime('%m-%d')
+csv_path = "birthdays.csv"
+df = pd.read_csv(csv_path)
 
 # Filtra aniversariantes de hoje
 aniversariantes = df[df['data'].apply(lambda d: datetime.strptime(d, '%Y-%m-%d').strftime('%m-%d') == hoje)]
 
 if not aniversariantes.empty:
     client = Client(account_sid, auth_token)
+    
     for _, row in aniversariantes.iterrows():
         nome = row['nome']
         mensagem = f"🎉 Hoje é aniversário do(a) {nome}! Não esqueça de dar os parabéns. 🥳"
-        client.messages.create(
-            body=mensagem,
-            from_=from_whatsapp,
-            to=to_whatsapp
-        )
-        print(f"Mensagem enviada: {mensagem}")
+
+        for to_whatsapp in to_whatsapp_numbers:
+            client.messages.create(
+                body=mensagem,
+                from_=from_whatsapp,
+                to=to_whatsapp
+            )
+            print(f"Mensagem enviada para {to_whatsapp}: {mensagem}")
 else:
     print("Nenhum aniversariante hoje.")
