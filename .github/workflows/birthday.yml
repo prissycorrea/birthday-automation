@@ -22,8 +22,9 @@ jobs:
 
       - name: Rodar o script de aniversários
         env:
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
-          TWILIO_TO: ${{ secrets.TWILIO_TO }}
+            TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+            TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+            TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+            TWILIO_TO: ${{ secrets.TWILIO_TO }}
+            GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
         run: python birthday_bot.py
