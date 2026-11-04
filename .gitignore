@@ -1,2 +1,5 @@
 .env
 birthday-automation-454414-af8c6737939d.json
+__pycache__/
+.pytest_cache/
+.clasp.json

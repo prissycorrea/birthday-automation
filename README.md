@@ -1,108 +1,160 @@
-# 🤖 Bot de Aniversários (Telegram + Google Sheets)
+# 🤖 Bot de Aniversários (Google Sheets + Telegram)
 
-Este é um bot automatizado que envia mensagens de **aviso de aniversário via Telegram**, usando os dados de uma planilha privada do **Google Sheets**. Ideal para quem quer lembrar todos os dias de aniversários importantes, direto no Telegram!
+Bot que lê os aniversários de uma planilha do **Google Sheets** e manda lembretes no **Telegram** (e, opcionalmente, no WhatsApp via Twilio) todos os dias às **07h (Brasília)**, rodando no GitHub Actions.
+
+Agora com um **web app** (Google Apps Script) para cadastrar, editar e excluir aniversários direto na planilha e **disparar a automação** com um clique — funciona no celular.
 
 ---
 
-## 💡 O que este bot faz
+## 💡 O que ele faz
 
-- 📆 Verifica se **hoje ou amanhã** é aniversário de alguém
-- 🤖 Envia uma **mensagem automática via Telegram avisando sobre o aniversário de hoje ou amanhã**
-- 🕖 Funciona todos os dias às **07h da manhã (horário de Brasília)** com GitHub Actions
+- 📆 Avisa quem faz aniversário **hoje** e **amanhã** (antecedências configuráveis, ex.: `0,1,7`)
+- 🧮 Mostra a **idade** que a pessoa vai fazer, quando o ano é informado
+- 📨 Manda **uma mensagem só** por dia, agrupando todos os aniversariantes
+- 📋 Modo **resumo**: lista os aniversários dos próximos 30 dias
+- ✅ Modo **teste**: confirma que o Telegram/WhatsApp está funcionando
+- 🧪 **Simulação** (dry-run) e **simular outra data** para testar sem enviar nada
+- 🛡️ Linhas com data inválida não derrubam o bot: aparecem como aviso no log
+- 🗓️ Quem nasceu em 29/02 é lembrado em 28/02 nos anos não bissextos
 
 ---
 
 ## 📂 Estrutura da planilha
 
-Sua planilha no Google Sheets deve:
+Planilha chamada **`birthdays`** (ou defina `SHEET_ID`), com cabeçalho na primeira linha:
 
-- Se chamar **`birthdays`**
-- Ter duas colunas: `nome` e `data`
-- As datas devem estar no formato `YYYY-MM-DD`
+| nome          | data       | ativo | obs              |
+|---------------|------------|-------|------------------|
+| João da Silva | 1990-03-21 | sim   | primo            |
+| Maria Souza   | 15/07      |       | sem ano, tudo bem |
+| Pedro         | 02/03/1992 | não   | não lembrar      |
 
-### Exemplo:
-
-| nome           | data       |
-|----------------|------------|
-| João da Silva  | 1990-03-21 |
-| Maria Souza    | 1985-07-15 |
-
-> 🔸 A primeira linha deve conter os cabeçalhos  
-> 🔸 A planilha deve estar compartilhada com a conta de serviço do Google
+- `nome` e `data` são obrigatórias. `ativo` e `obs` são opcionais (o web app cria se faltar).
+- Formatos de data aceitos: `YYYY-MM-DD`, `DD/MM/YYYY`, `DD/MM` (sem ano).
+- `ativo` = `não`/`false`/`0` desliga o lembrete daquela pessoa.
 
 ---
 
-## ⚙️ Como configurar
+## 🖥️ Web app (Apps Script)
 
-### 1. Crie seu bot no Telegram
+O código está em [`apps-script/`](apps-script/).
 
-1. Fale com o [@BotFather](https://t.me/BotFather)
-2. Envie o comando `/newbot` e siga os passos
-3. Copie o **token de API** gerado
+### 1. Criar o projeto
 
-### 2. Pegue seu `chat_id` do Telegram
+1. Abra a planilha **birthdays** → **Extensões → Apps Script**
+2. Substitua o conteúdo de `Código.gs` pelo de [`apps-script/Code.gs`](apps-script/Code.gs)
+3. Crie um arquivo HTML chamado **`Index`** e cole [`apps-script/Index.html`](apps-script/Index.html)
+4. (Opcional) Em **Configurações do projeto**, marque “Mostrar o arquivo de manifesto” e cole [`apps-script/appsscript.json`](apps-script/appsscript.json)
 
-1. Mande uma mensagem para o seu bot
-2. Acesse:
+> Prefere linha de comando? Use o [`clasp`](https://github.com/google/clasp): `clasp clone <scriptId>` e `clasp push` a partir da pasta `apps-script/`.
 
+### 2. Token do GitHub (para o botão “Disparar”)
+
+1. GitHub → **Settings → Developer settings → Fine-grained tokens → Generate new token**
+2. **Repository access**: só este repositório
+3. **Permissions → Actions: Read and write** (nada mais)
+4. Copie o token
+
+### 3. Propriedades do script
+
+Em **Configurações do projeto → Propriedades do script**:
+
+| Propriedade      | Valor                                                      |
+|------------------|------------------------------------------------------------|
+| `GITHUB_TOKEN`   | o token do passo anterior                                  |
+| `GITHUB_REPO`    | `prissycorrea/birthday-automation` (padrão)                |
+| `SHEET_ID`       | id da planilha (o trecho entre `/d/` e `/edit` na URL) — recomendado |
+| `ALLOWED_EMAILS` | e-mails que podem usar o app, separados por vírgula — recomendado |
+
+Opcionais: `GITHUB_WORKFLOW` (padrão `birthday.yml`), `GITHUB_REF` (padrão `master`), `SHEET_TAB` (padrão: primeira aba).
+
+### 4. Publicar
+
+1. **Implantar → Nova implantação → App da Web**
+2. **Executar como:** *Usuário que acessa o app da Web*
+3. **Quem pode acessar:** *Qualquer pessoa com uma Conta do Google*
+4. Autorize e copie a URL (dá pra salvar na tela inicial do celular)
+
+🔒 Segurança: o app roda com a conta de quem acessa, então só quem tem acesso à planilha (e está em `ALLOWED_EMAILS`, se definido) consegue ver os dados ou disparar o workflow. O token do GitHub fica nas propriedades do script, nunca vai para o navegador.
+
+Depois de publicar, a planilha ganha o menu **🎂 Aniversários** (abrir app / disparar lembretes).
+
+---
+
+## ⚙️ Configuração do bot (GitHub Actions)
+
+### 1. Bot do Telegram
+
+1. Fale com o [@BotFather](https://t.me/BotFather), envie `/newbot` e copie o **token**
+2. Mande uma mensagem para o bot e abra `https://api.telegram.org/bot<SEU_TOKEN>/getUpdates`
+3. Copie o `"chat": { "id": ... }` — pode usar **vários IDs** separados por vírgula
+
+### 2. Acesso ao Google Sheets
+
+1. No [Google Cloud Console](https://console.cloud.google.com/), ative **Google Sheets API** e **Google Drive API**
+2. Crie uma **conta de serviço** e baixe a chave `.json`
+3. Compartilhe a planilha com o e-mail da conta de serviço (leitor)
+
+### 3. Secrets e variáveis
+
+`Settings → Secrets and variables → Actions`
+
+**Secrets**
+
+| Nome                       | Valor                                           |
+|----------------------------|-------------------------------------------------|
+| `GSHEETS_CREDENTIALS_JSON` | conteúdo completo do `.json` da conta de serviço |
+| `TELEGRAM_BOT_TOKEN`       | token do bot                                    |
+| `TELEGRAM_CHAT_ID`         | chat ID(s), separados por vírgula               |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_TO` | *(opcional)* WhatsApp via Twilio — só é usado se os quatro existirem |
+
+**Variables** (opcionais)
+
+| Nome            | Padrão      | Para quê                                        |
+|-----------------|-------------|-------------------------------------------------|
+| `LEMBRETE_DIAS` | `0,1`       | antecedências do lembrete (ex.: `0,1,7`)        |
+| `RESUMO_DIAS`   | `30`        | janela do modo resumo                           |
+| `SHEET_ID`      | —           | abre a planilha pelo id em vez do nome          |
+| `SHEET_NAME`    | `birthdays` | nome da planilha                                |
+
+---
+
+## ⏰ Execução
+
+- **Automática:** todo dia às 07:00 (Brasília) — `cron: '0 10 * * *'`
+- **Manual:** pelo web app ou em **Actions → Enviar lembrete de aniversários → Run workflow**, escolhendo modo, simulação e data
+- O workflow `keepalive` faz um commit mensal para o GitHub não desativar o agendamento por inatividade
+
+### Rodando localmente
+
+```bash
+pip install -r requirements-dev.txt
+export GSHEETS_CREDENTIALS_JSON="$(cat chave.json)"
+python main.py --dry-run                     # mostra a mensagem de hoje
+python main.py --modo resumo --dry-run       # próximos 30 dias
+python main.py --data 2026-03-20 --dry-run   # simula outro dia
+python -m pytest                             # testes
 ```
-https://api.telegram.org/bot<SEU_TOKEN>/getUpdates
-```
-
-3. Copie o campo `"chat": { "id": ... }`
-
-> Você pode usar **mais de um ID**, separando-os por vírgula.
-
----
-
-### 3. Configure o acesso ao Google Sheets
-
-1. Crie um projeto no [Google Cloud Console](https://console.cloud.google.com/)
-2. Ative as APIs:
-   - ✅ Google Sheets API
-   - ✅ Google Drive API
-3. Crie uma **conta de serviço**
-4. Baixe o arquivo `.json` da chave
-5. Compartilhe a planilha com o e-mail da conta de serviço (como leitor)
-
----
-
-### 4. Adicione os secrets no GitHub
-
-Vá em: `Settings > Secrets and variables > Actions`
-
-Crie os seguintes secrets:
-
-| Nome                      | Valor                                          |
-|---------------------------|------------------------------------------------|
-| `GSHEETS_CREDENTIALS_JSON` | Conteúdo completo do `.json` da conta de serviço |
-| `TELEGRAM_BOT_TOKEN`      | Token do bot do Telegram                       |
-| `TELEGRAM_CHAT_ID`        | Chat ID(s) que vão receber as mensagens        |
 
 ---
 
 ## 🛠️ Estrutura do projeto
 
-- `telegram_bot.py`: script principal que lê a planilha e envia mensagens
-- `.github/workflows/birthday.yml`: workflow agendado com GitHub Actions
-- `README.md`: este arquivo ✨
-
----
-
-## ⏰ Agendamento
-
-O bot é executado todos os dias às **07:00 da manhã (horário de Brasília)**:
-
-```yaml
-schedule:
-  - cron: '0 10 * * *'  # 10h UTC = 07h BRT
 ```
-
-Você também pode executar manualmente pela aba **Actions** do GitHub.
+main.py                    # entrada: lê a planilha, monta e envia a mensagem
+bot/birthdays.py           # regras (datas, idade, 29/02, mensagens) — sem I/O
+bot/integrations.py        # Google Sheets, Telegram e WhatsApp
+tests/                     # testes (pytest)
+apps-script/               # web app (Code.gs, Index.html, appsscript.json)
+.github/workflows/
+  birthday.yml             # agendamento diário + disparo manual
+  tests.yml                # roda os testes em push/PR
+  keepalive.yml            # mantém o agendamento ativo
+```
 
 ---
 
 ## 👩‍💻 Autor
 
-Feito com carinho por [@prissycorrea](https://github.com/prissycorrea) 💜  
+Feito com carinho por [@prissycorrea](https://github.com/prissycorrea) 💜
 Sinta-se à vontade para usar, modificar e compartilhar!
