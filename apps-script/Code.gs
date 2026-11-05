@@ -37,8 +37,7 @@ function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Aniversários')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setFaviconUrl('https://fonts.gstatic.com/s/e/notoemoji/latest/1f382/emoji.svg');
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 /** Menu na planilha com atalho para o app. */
