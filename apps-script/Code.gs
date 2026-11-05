@@ -126,15 +126,16 @@ function salvarAniversario(dados) {
   return comLock_(() => {
     const sh = aba_();
     const col = colunas_(sh, true);
+    let linha;
     if (dados.linha) {
-      const linha = Number(dados.linha);
+      linha = Number(dados.linha);
       conferirLinha_(sh, col, linha, dados.nomeOriginal);
-      HEADERS.forEach((h, i) => sh.getRange(linha, col[h] + 1).setValue(linhaValores[i]));
     } else {
-      const nova = new Array(sh.getLastColumn()).fill('');
-      HEADERS.forEach((h, i) => (nova[col[h]] = linhaValores[i]));
-      sh.appendRow(nova);
+      linha = sh.getLastRow() + 1;
     }
+    // só a célula gravada vira texto puro, para o Sheets não converter a data
+    sh.getRange(linha, col.data + 1).setNumberFormat('@');
+    HEADERS.forEach((h, i) => sh.getRange(linha, col[h] + 1).setValue(linhaValores[i]));
     return getDados();
   });
 }
@@ -217,8 +218,6 @@ function colunas_(sh, criar) {
         col[h] = prox++;
       }
     });
-    // data como texto puro: evita que o Sheets converta e mude o formato
-    sh.getRange(2, col.data + 1, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('@');
   }
   return col;
 }
