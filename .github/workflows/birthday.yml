@@ -1,37 +1,69 @@
 name: Enviar lembrete de aniversários
+run-name: "${{ github.event_name == 'workflow_dispatch' && format('Manual: {0}{1}', inputs.modo, inputs.dry_run && ' (simulação)' || '') || 'Agendado: lembretes' }}"
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # executa todo dia às 7h (Brasília) = 10h UTC
-  workflow_dispatch:      # permite rodar manualmente
+    - cron: '0 10 * * *'  # todo dia às 7h (Brasília) = 10h UTC
+  workflow_dispatch:      # manual pela aba Actions ou pelo web app
+    inputs:
+      modo:
+        description: "O que fazer"
+        type: choice
+        options: [lembretes, resumo, teste]
+        default: lembretes
+      dry_run:
+        description: "Simulação (só mostra a mensagem no log, não envia)"
+        type: boolean
+        default: false
+      data:
+        description: "Simular outro dia (YYYY-MM-DD). Vazio = hoje"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: birthday-bot
+  cancel-in-progress: false
 
 jobs:
   lembrete:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Clonar o repositório
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
 
       - name: Instalar dependências
-        run: |
-          pip install pandas twilio gspread oauth2client
+        run: pip install -r requirements.txt
 
-      - name: Listar arquivos do diretório antes de rodar o script
-        run: ls -R
-
-      #- name: Rodar o script de aniversários
-        #env:
-            #TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-            #TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-            #TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
-            #TWILIO_TO: ${{ secrets.TWILIO_TO }}
-            #GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
-        #run: python birthday_bot.py
-
-      - name: Rodar o bot do Telegram
+      - name: Rodar o bot
         env:
+          # entradas passadas por env (evita injeção de shell)
+          MODO: ${{ inputs.modo || 'lembretes' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+          DATA_REFERENCIA: ${{ inputs.data }}
+          # configuráveis em Settings > Secrets and variables > Actions > Variables
+          LEMBRETE_DIAS: ${{ vars.LEMBRETE_DIAS || '0,1' }}
+          RESUMO_DIAS: ${{ vars.RESUMO_DIAS || '30' }}
+          SHEET_ID: ${{ vars.SHEET_ID }}
+          SHEET_NAME: ${{ vars.SHEET_NAME || 'birthdays' }}
+          # secrets
+          GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GSHEETS_CREDENTIALS_JSON: ${{ secrets.GSHEETS_CREDENTIALS_JSON }}
-        run: python telegram_bot.py
+          # WhatsApp (opcional): só é usado se os 4 secrets existirem
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+          TWILIO_TO: ${{ secrets.TWILIO_TO }}
+        run: python main.py
